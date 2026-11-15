@@ -13,6 +13,7 @@ from django.db import connection
 from django.utils import timezone
 
 from catalog.models import ProviderThrottle
+from catalog.health_events import (SCAN_FAILURE, MATCH_FAILURE, record_failure, clear_failure)
 
 log = logging.getLogger(__name__)
 LOCK_ID = 45142026
@@ -65,11 +66,21 @@ class Command(BaseCommand):
             # Missing NAS mounts cause scan_media to fail and are never
             # treated as empty libraries.
             self.stdout.write("media45: NAS-Inventur wird gestartet.")
-            call_command("scan_media", "--root", "all", stdout=self.stdout, stderr=self.stderr)
-            call_command("group_media", stdout=self.stdout, stderr=self.stderr)
+            try:
+                call_command("scan_media", "--root", "all", stdout=self.stdout, stderr=self.stderr)
+                call_command("group_media", stdout=self.stdout, stderr=self.stderr)
+            except Exception:
+                record_failure(SCAN_FAILURE)
+                raise
             record.last_call = timezone.now()
             record.save(update_fields=["last_call"])
+            clear_failure(SCAN_FAILURE)
         # Existing metadata confirmations are never touched.
         # match_media already remembers successful and zero-result searches.
         self.stdout.write(f"media45: Metadatenpaket ({limit} Gruppen) wird geprüft.")
-        call_command("match_media", limit=limit, stdout=self.stdout, stderr=self.stderr)
+        try:
+            call_command("match_media", limit=limit, stdout=self.stdout, stderr=self.stderr)
+        except Exception:
+            record_failure(MATCH_FAILURE)
+            raise
+        clear_failure(MATCH_FAILURE)

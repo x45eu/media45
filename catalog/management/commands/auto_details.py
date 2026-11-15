@@ -13,6 +13,7 @@ from django.db import connection
 from django.utils import timezone
 
 from catalog.models import ProviderThrottle
+from catalog.health_events import DETAILS_FAILURE, record_failure, clear_failure
 
 
 LOCK_ID = 45142027
@@ -56,6 +57,7 @@ class Command(BaseCommand):
             return False
         try:
             if not (getattr(settings, "TMDB_READ_ACCESS_TOKEN", "") or "").strip():
+                record_failure(DETAILS_FAILURE)
                 self.stderr.write("TMDB: Kein Token konfiguriert; Aktualisierung uebersprungen.")
                 return False
             now = timezone.now()
@@ -69,9 +71,14 @@ class Command(BaseCommand):
             # fetch_details itself skips valid, identity-bound caches, limits
             # requests and never reads NAS paths or downloads cover images.
             self.stdout.write(f"TMDB: Starte lokalen Details-Abgleich (max. {limit} Titel).")
-            call_command("fetch_details", limit=limit, stdout=self.stdout, stderr=self.stderr)
+            try:
+                call_command("fetch_details", limit=limit, stdout=self.stdout, stderr=self.stderr)
+            except Exception:
+                record_failure(DETAILS_FAILURE)
+                raise
             record.last_call = timezone.now()
             record.save(update_fields=["last_call"])
+            clear_failure(DETAILS_FAILURE)
             return True
         finally:
             with connection.cursor() as cursor:

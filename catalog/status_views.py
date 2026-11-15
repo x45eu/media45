@@ -13,6 +13,7 @@ from . import covers
 from .management.commands.auto_details import STATE_KEY as DETAILS_KEY
 from .management.commands.auto_media import STATE_KEY as SCAN_KEY
 from .models import Media, MediaDetails, ProviderThrottle, ScannedFile
+from .health_events import SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE
 
 
 def assess_freshness(timestamp, now, *, max_age=timedelta(hours=26)):
@@ -31,6 +32,15 @@ def assess_completeness(current, total):
     if current == total:
         return {"level": "ok", "label": "Vollständig"}
     return {"level": "warning", "label": "Unvollständig"}
+
+
+def assess_failure(health, failure_time, now):
+    """Red means a recorded exception/config failure, never assumed downtime."""
+    if failure_time is None:
+        return health
+    if failure_time > now:
+        return {"level": "unknown", "label": "Unbekannt"}
+    return {"level": "error", "label": "Fehler erfasst"}
 
 
 @login_required
@@ -56,7 +66,7 @@ def system_status(request):
 
     # These timestamps indicate completed scheduled cycles, NOT container liveness.
     stamps = dict(ProviderThrottle.objects.filter(
-        provider__in=(DETAILS_KEY, SCAN_KEY),
+        provider__in=(DETAILS_KEY, SCAN_KEY, SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE),
     ).values_list("provider", "last_call"))
 
     # The scanner only sees read-only NAS paths; the web process never mounts them.
@@ -71,7 +81,8 @@ def system_status(request):
         "last_scan": stamps.get(SCAN_KEY),
         "cover_health": assess_completeness(cover_count, total),
         "details_health": assess_completeness(current_details, total),
-        "scan_health": assess_freshness(stamps.get(SCAN_KEY), now),
-        "details_run_health": assess_freshness(stamps.get(DETAILS_KEY), now),
+        "scan_health": assess_failure(assess_freshness(stamps.get(SCAN_KEY), now), stamps.get(SCAN_FAILURE), now),
+        "match_health": assess_failure({"level": "unknown", "label": "Keine Laufzeitüberwachung"}, stamps.get(MATCH_FAILURE), now),
+        "details_run_health": assess_failure(assess_freshness(stamps.get(DETAILS_KEY), now), stamps.get(DETAILS_FAILURE), now),
         "checked_at": now,
     })
