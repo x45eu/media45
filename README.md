@@ -220,6 +220,17 @@ Video-Inventur und kurze TMDB-Abgleiche. Er benötigt nur die beiden
 read-only Video-Mounts. Für Poster sind die TMDB-Nutzungsbedingungen
 und Quellenhinweise unter `/quellen/` zu beachten.
 
+## Offline-Sicherheitscheck für Betreiber
+
+Ein kostenloser, ausschließlich lokaler Konfigurationscheck ohne externe Dienste:
+
+```bash
+python3 tools/security_check.py
+```
+
+Ausführliche Hinweise und Grenzen: [Sichere Installation](docs/SECURE_INSTALL.md).
+Der Check verändert weder .env noch Docker, PostgreSQL oder NAS-Dateien.
+
 ## Netzwerksicherheit bei Neuinstallationen
 
 **Kein eingebauter HTTPS-Server.** Die Standardinstallation bindet den
