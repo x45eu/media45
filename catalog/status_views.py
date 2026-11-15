@@ -12,7 +12,9 @@ from django.views.decorators.http import require_GET
 from . import covers
 from .management.commands.auto_details import STATE_KEY as DETAILS_KEY
 from .management.commands.auto_media import STATE_KEY as SCAN_KEY
-from .models import Media, MediaDetails, ProviderThrottle, ScannedFile
+from django.db.models import Exists, OuterRef
+from .models import (Media, MediaDetails, ProviderThrottle, ScannedFile,
+                     MediaGroup, MetadataCandidate)
 from .health_events import (SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE,
                             SCHEDULER_HEARTBEAT, DETAILS_HEARTBEAT)
 
@@ -53,6 +55,33 @@ def assess_failure(health, failure_time, now):
     return {"level": "error", "label": "Fehler erfasst"}
 
 
+def admin_work_summary():
+    """Aggregate only: no media titles, files, candidate identities or network access."""
+    active_files = ScannedFile.objects.filter(root__in=("movies", "series"))
+    linked = active_files.filter(group_id=OuterRef("pk"), media__isnull=False)
+    candidates = MetadataCandidate.objects.filter(group_id=OuterRef("pk"))
+    actionable = MediaGroup.objects.filter(
+        root__in=("movies", "series"), file_count__gt=0,
+        review_deferred=False,
+    ).annotate(has_linked=Exists(linked), has_candidates=Exists(candidates)).filter(
+        has_linked=False,
+    )
+    return {
+        "groups_with_suggestions": actionable.filter(has_candidates=True).count(),
+        "groups_unsearched": actionable.filter(
+            metadata_checked_at__isnull=True, has_candidates=False,
+        ).count(),
+        "groups_no_results": actionable.filter(
+            metadata_checked_at__isnull=False, has_candidates=False,
+        ).count(),
+        "groups_deferred": MediaGroup.objects.filter(
+            root__in=("movies", "series"), file_count__gt=0,
+            review_deferred=True,
+        ).count(),
+        "files_without_media": active_files.filter(media__isnull=True).count(),
+    }
+
+
 @login_required
 @require_GET
 @never_cache
@@ -81,6 +110,7 @@ def system_status(request):
     ).values_list("provider", "last_call"))
 
     # The scanner only sees read-only NAS paths; the web process never mounts them.
+    work_summary = admin_work_summary()
     return render(request, "catalog/system_status.html", {
         "total": total,
         "cover_count": cover_count,
@@ -88,6 +118,7 @@ def system_status(request):
         "details_count": current_details,
         "details_missing": total - current_details,
         "indexed_files": ScannedFile.objects.filter(root__in=("movies", "series")).count(),
+        "work_summary": work_summary,
         "last_details": stamps.get(DETAILS_KEY),
         "last_scan": stamps.get(SCAN_KEY),
         "last_scheduler_heartbeat": stamps.get(SCHEDULER_HEARTBEAT),

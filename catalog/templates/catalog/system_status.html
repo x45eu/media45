@@ -31,6 +31,18 @@
     <small>Metadaten gelten für 90 Tage als aktuell.</small>
   </div>
   <div class="card">
+    <h2>Offene Verwaltungsaufgaben</h2>
+    <p class="health-note">Nur aggregierte Datenbankzahlen; keine Dateinamen, Medientitel oder externen Abfragen. Eine Gruppe gilt hier als zugeordnet, sobald mindestens eine ihrer Dateien mit einem Katalogeintrag verknüpft ist.</p>
+    <div class="stats">
+      <div class="stat"><strong>{{ work_summary.groups_with_suggestions }}</strong><span>Aktive Gruppen mit Metadatenvorschlägen</span></div>
+      <div class="stat"><strong>{{ work_summary.groups_unsearched }}</strong><span>Aktive Gruppen noch nicht gesucht</span></div>
+      <div class="stat"><strong>{{ work_summary.groups_no_results }}</strong><span>Gesuchte Gruppen ohne Vorschläge</span></div>
+      <div class="stat"><strong>{{ work_summary.groups_deferred }}</strong><span>Zurückgestellte Gruppen</span></div>
+      <div class="stat"><strong>{{ work_summary.files_without_media }}</strong><span>Dateien ohne direkte Katalogzuordnung</span></div>
+    </div>
+    <small>Die Gruppenzahlen schließen leere und bereits teilweise zugeordnete Gruppen aus; zurückgestellte Gruppen werden separat gezählt. Die Dateizahl ist keine Anzahl fehlender Katalogtitel. Metadatenvorschläge werden niemals automatisch bestätigt.</small>
+  </div>
+  <div class="card">
     <h2>Automatische Abläufe</h2>
     <p class="health-note">Dienstkontakt ist kein Docker-Healthcheck: angezeigt wird nur, wann der jeweilige Prozess zuletzt einen Prüfzyklus in der Datenbank begonnen hat.</p>
     <dl class="detail-facts">

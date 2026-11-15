@@ -56,6 +56,90 @@ class SystemStatusTests(TestCase):
         self.assertEqual(self.client.post(reverse("system_status")).status_code, 405)
 
 
+class AdminWorkSummaryTests(TestCase):
+    def test_empty_work_queue_is_zero(self):
+        from catalog.status_views import admin_work_summary
+        summary = admin_work_summary()
+        self.assertEqual(set(summary), {
+            "groups_with_suggestions", "groups_unsearched", "groups_no_results",
+            "groups_deferred", "files_without_media",
+        })
+        self.assertTrue(all(v == 0 for v in summary.values()))
+
+    def test_counts_active_deferred_and_linked_separately(self):
+        from catalog.models import MediaGroup, MetadataCandidate, ScannedFile
+        from catalog.status_views import admin_work_summary
+
+        def group(n, **kw):
+            return MediaGroup.objects.create(
+                root="movies", group_key=f"test-{n}", kind="movie",
+                suggested_title=f"Title {n}", file_count=1, **kw,
+            )
+
+        suggested = group(1)
+        MetadataCandidate.objects.create(
+            group=suggested, kind="movie", title="Secret Candidate",
+            external_provider="imdb", external_id="tt8765432",
+        )
+        group(2)
+        group(3, metadata_checked_at=timezone.now())
+        group(4, review_deferred=True)
+        linked_group = group(5)
+        ScannedFile.objects.create(
+            root="movies", relative_path="secret/file.mkv", media_kind="movie",
+            suggested_title="Secret filename", file_size=100, modified_ns=1,
+            last_seen_at=timezone.now(), group=linked_group, media=Media.objects.create(
+                kind="movie", title="Linked", external_provider="imdb",
+                external_id="tt7654321",
+            ),
+        )
+        ScannedFile.objects.create(
+            root="movies", relative_path="secret/unlinked.mkv", media_kind="movie",
+            suggested_title="Secret file", file_size=100, modified_ns=1,
+            last_seen_at=timezone.now(), group=suggested,
+        )
+        summary = admin_work_summary()
+        self.assertEqual(summary, {
+            "groups_with_suggestions": 1,
+            "groups_unsearched": 1,
+            "groups_no_results": 1,
+            "groups_deferred": 1,
+            "files_without_media": 1,
+        })
+
+    def test_admin_page_contains_only_counts(self):
+        from catalog.models import MediaGroup, MetadataCandidate, ScannedFile
+        admin = get_user_model().objects.create_superuser(
+            username="work-admin", email="work@example.invalid",
+            password="long-password-for-test",
+        )
+        TotpDevice.objects.create(user=admin, secret="JBSWY3DPEHPK3PXP")
+        group = MediaGroup.objects.create(
+            root="movies", group_key="private-work", kind="movie",
+            suggested_title="Sensitive Work Title", file_count=1,
+        )
+        MetadataCandidate.objects.create(
+            group=group, kind="movie", title="Sensitive Candidate Title",
+            external_provider="imdb", external_id="tt8989898",
+        )
+        ScannedFile.objects.create(
+            root="movies", relative_path="PRIVATE/nas-video.mkv",
+            media_kind="movie", suggested_title="Sensitive NAS Title",
+            file_size=100, modified_ns=1, last_seen_at=timezone.now(), group=group,
+        )
+        self.client.force_login(admin)
+        session = self.client.session
+        session["media45_mfa_verified_user"] = admin.pk
+        session.save()
+        with TemporaryDirectory() as cover_dir, override_settings(COVER_DIR=cover_dir):
+            response = self.client.get(reverse("system_status"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Offene Verwaltungsaufgaben")
+        for secret in ("Sensitive Work Title", "Sensitive Candidate Title",
+                       "PRIVATE/nas-video.mkv", "tt8989898"):
+            self.assertNotContains(response, secret)
+
+
 class StatusAssessmentTests(TestCase):
     def test_no_last_run_is_unknown(self):
         from catalog.status_views import assess_freshness
