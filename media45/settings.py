@@ -84,7 +84,13 @@ CSRF_COOKIE_SAMESITE = "Strict"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
-# Not production-ready: trusted NetBird proxy / TLS forwarding and HSTS pending verification.
+# TLS terminates at the operator-managed reverse proxy. Do not trust forwarded
+# HTTPS headers unless that proxy strips incoming client-supplied headers and
+# the Django upstream cannot be reached directly by untrusted clients.
+if os.getenv("MEDIA45_TRUST_PROXY_HTTPS", "0") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# HTTPS redirection and HSTS must be enforced by the TLS-terminating proxy.
+# Enabling these here without verified proxy headers can cause redirect loops.
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 LOGIN_REDIRECT_URL = "/"

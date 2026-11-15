@@ -26,7 +26,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3000:8000"
+      - "${MEDIA45_BIND_ADDRESS:-127.0.0.1}:3000:8000"
     volumes:
       - coverdata:/app/coverdata
     networks: [internal]

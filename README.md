@@ -219,3 +219,36 @@ Migration/Deployment ausführen.
 Video-Inventur und kurze TMDB-Abgleiche. Er benötigt nur die beiden
 read-only Video-Mounts. Für Poster sind die TMDB-Nutzungsbedingungen
 und Quellenhinweise unter `/quellen/` zu beachten.
+
+## Netzwerksicherheit bei Neuinstallationen
+
+**Kein eingebauter HTTPS-Server.** Die Standardinstallation bindet den
+Web-Port ausschließlich an `127.0.0.1:3000` auf dem Docker-Host. Ein
+vertrauenswürdiger TLS-Reverse-Proxy muss HTTPS bereitstellen und HTTP auf
+HTTPS umleiten, bevor die Anwendung für Dritte erreichbar gemacht wird.
+Auf dem TLS-Endpunkt nach korrekter HTTPS-Einrichtung auch HSTS konfigurieren.
+Die `MEDIA45_ORIGIN` muss die tatsächliche `https://`-URL enthalten.
+
+Nur wenn ein externer Proxy im **abgesicherten internen Netz** den Docker-Host
+erreichen muss, kann die private `.env` beispielsweise enthalten:
+
+```dotenv
+MEDIA45_BIND_ADDRESS=0.0.0.0
+```
+
+**Achtung:** Das öffnet Port 3000 auf allen Host-Netzwerkinterfaces. Dafür
+müssen Firewall und Netzwerkzugriff eigenständig auf den Proxy begrenzt sein.
+Bei Bedarf statt `0.0.0.0` gezielt eine Host-IP-Adresse wählen.
+
+Standardmäßig vertraut Django **keinen** `X-Forwarded-Proto`-Headern. Nur
+wenn der Reverse-Proxy vom Client kommende Forwarded-Header zuverlässig
+entfernt/überschreibt **und** direkter untrusted Zugriff auf Django gesperrt
+ist, kann in der privaten `.env` zusätzlich stehen:
+
+```dotenv
+MEDIA45_TRUST_PROXY_HTTPS=1
+```
+
+Diese Option niemals allein als HTTPS-Schutz verstehen: TLS, Redirect und
+HSTS bleiben Aufgaben des vertrauenswürdigen Proxys. Die Django-Deploy-Checks
+warnen deshalb weiterhin über deaktivierten App-Redirect und App-HSTS.
