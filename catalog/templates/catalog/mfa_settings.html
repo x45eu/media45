@@ -1,0 +1,35 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="review-hero">
+  <div>
+    <p class="eyebrow">KONTOSCHUTZ</p>
+    <h1>Zwei-Faktor-Authentifizierung</h1>
+    <p>Hier verwaltest du deinen bereits eingerichteten zweiten Anmeldefaktor.</p>
+  </div>
+</section>
+<section class="card account-form">
+  <h2>TOTP ist aktiviert</h2>
+  <p><span class="status status-available">Aktiv</span>
+    {% if mfa_required %}<span class="status status-progress">Für dein Admin-/Staff-Konto erforderlich</span>
+    {% else %}<span class="status status-progress">Freiwillig aktiviert</span>{% endif %}
+  </p>
+  <dl class="detail-facts">
+    <div><dt>Aktiviert</dt><dd>{{ device.enabled_at|date:"d.m.Y H:i" }}</dd></div>
+    <div><dt>Notfallcodes</dt><dd>{{ recovery_remaining }} unbenutzte Codes</dd></div>
+  </dl>
+  <p>Dein bestehender TOTP-Schlüssel wird aus Sicherheitsgründen hier nicht erneut angezeigt.</p>
+</section>
+<section class="card account-form">
+  <h2>Neue Notfallcodes erstellen</h2>
+  <p>Wenn du deine ursprünglichen Codes verloren hast oder neue benötigst, kannst du zehn neue erzeugen. <strong>Alle bisherigen Notfallcodes werden dabei ungültig.</strong> Die Authenticator-App bleibt unverändert.</p>
+  <form method="post" action="{% url 'mfa_settings' %}">
+    {% csrf_token %}
+    <p><label for="mfa-password">Aktuelles Passwort</label>
+      <input id="mfa-password" type="password" name="password" autocomplete="current-password" required></p>
+    <p><label for="mfa-code">Neuer sechsstelliger Authenticator-Code</label>
+      <input id="mfa-code" type="text" name="code" autocomplete="one-time-code"
+             inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></p>
+    <button type="submit">Notfallcodes erneuern</button>
+  </form>
+</section>
+{% endblock %}

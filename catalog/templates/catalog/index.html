@@ -1,0 +1,137 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">DEINE MEDIEN. DEIN KATALOG.</p>
+    <h1>Entdecken, was vorhanden ist.</h1>
+    <p>Filme und Serien an einem Ort. Keine Werbung, kein Streaming, kein Tracking.</p>
+  </div>
+  {% if user.is_authenticated %}
+    <a class="primary-link" href="{% url 'new_request' %}">+ Medienwunsch erstellen</a>
+  {% endif %}
+</section>
+
+<div class="stats" aria-label="Katalogstatistik">
+  <div class="stat"><strong>{{ total_count }}</strong><span>Titel im Katalog</span></div>
+  <div class="stat"><strong>{{ available_count }}</strong><span>Vorhanden</span></div>
+  <div class="stat"><strong>{{ requested_count }}</strong><span>Angefragt</span></div>
+</div>
+
+<form method="get" class="filterbar" role="search" aria-label="Katalog durchsuchen">
+  <div class="filter-search">
+    <label for="catalog-q">Katalog durchsuchen</label>
+    <input id="catalog-q" name="q" type="search" maxlength="100" value="{{ query }}" placeholder="Titel oder IMDb-ID">
+  </div>
+  <div>
+    <label for="catalog-kind">Medientyp</label>
+    <select name="kind" id="catalog-kind">
+      <option value="">Alle Medien</option>
+      {% for value,label in kind_choices %}
+        <option value="{{ value }}" {% if kind == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="catalog-state">Status</label>
+    <select name="state" id="catalog-state">
+      <option value="">Alle Status</option>
+      {% for value,label in state_choices %}
+        <option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <details class="advanced-filters" {% if advanced_open %}open{% endif %}>
+    <summary>Weitere Filter{% if advanced_open %} · aktiv{% endif %}</summary>
+    <div class="advanced-filter-grid">
+      <div>
+        <label for="catalog-genre">Genre</label>
+        <select name="genre" id="catalog-genre">
+          <option value="">Alle Genres</option>
+          {% for choice in genre_choices %}
+            <option value="{{ choice }}" {% if genre == choice %}selected{% endif %}>{{ choice }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="catalog-year">Erscheinungsjahr</label>
+        <select name="year" id="catalog-year">
+          <option value="">Alle Jahre</option>
+          {% for choice in year_choices %}
+            <option value="{{ choice }}" {% if year == choice %}selected{% endif %}>{{ choice }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="catalog-rating">TMDB-Bewertung</label>
+        <select name="rating" id="catalog-rating">
+          <option value="">Alle Bewertungen</option>
+          {% for value,label in rating_choices %}
+            <option value="{{ value }}" {% if rating == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="catalog-sort">Sortierung</label>
+        <select name="sort" id="catalog-sort">
+          <option value="title" {% if sort == "title" %}selected{% endif %}>Titel A–Z</option>
+          <option value="newest" {% if sort == "newest" %}selected{% endif %}>Neu hinzugefügt</option>
+          <option value="year" {% if sort == "year" %}selected{% endif %}>Erscheinungsjahr</option>
+          <option value="rating" {% if sort == "rating" %}selected{% endif %}>Beste TMDB-Bewertung</option>
+        </select>
+      </div>
+    </div>
+  </details>
+  <button type="submit">Anzeigen</button>
+  <a class="reset-link" href="{% url 'index' %}">Zurücksetzen</a>
+</form>
+
+<div class="results-head">
+  <h2>Medienübersicht</h2>
+  <span>{{ page_obj.paginator.count }} Treffer</span>
+</div>
+
+{% if page_obj %}
+  <div class="media-grid">
+    {% for item in page_obj %}
+      <a class="media-tile" href="{% url 'media_detail' item.pk %}" aria-label="{{ item.title }}, {{ item.get_kind_display }}, {{ item.get_state_display }}">
+        <div class="media-art media-art-{{ item.kind }}" aria-hidden="true">
+          {% if item.has_cover %}<img class="cover-image" loading="lazy" decoding="async" src="{% url 'media_cover' item.pk %}" alt="">{% else %}
+          <span class="art-mark">{{ item.title|slice:":1"|upper }}</span>
+          <span class="art-kind">{{ item.get_kind_display }}</span>{% endif %}
+        </div>
+        <div class="media-info">
+          <h3>{{ item.title }}</h3>
+          <div class="media-meta">
+            <span>{{ item.year|default:"Jahr unbekannt" }}</span>
+            {% if item.state == "available" %}
+              <span class="status status-available">Vorhanden</span>
+            {% elif item.state == "requested" %}
+              <span class="status status-requested">Angefragt</span>
+            {% else %}
+              <span class="status status-progress">In Bearbeitung</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <nav class="pagination" aria-label="Seitennavigation">
+      {% if page_obj.has_previous %}
+        <a href="{% querystring page=page_obj.previous_page_number %}">← Zurück</a>
+      {% endif %}
+      <span>Seite {{ page_obj.number }} von {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="{% querystring page=page_obj.next_page_number %}">Weiter →</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% else %}
+  <section class="empty-state">
+    <h3>Keine passenden Titel gefunden</h3>
+    <p>Ändere die Suchfilter oder stelle einen neuen Medienwunsch. Unbestätigte Scanner-Treffer erscheinen hier noch nicht.</p>
+    <a href="{% url 'index' %}">Alle Titel anzeigen</a>
+  </section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="review-hero">
+  <div><p class="eyebrow">DEIN MEDIENBEREICH</p><h1>Meine Wünsche</h1><p>Hier siehst du ausschließlich deine Anfragen und ihren aktuellen Status.</p></div>
+  <a class="primary-link" href="{% url 'new_request' %}">+ Neuen Wunsch erstellen</a>
+</section>
+<div class="stats">
+  <div class="stat"><strong>{{ counts.total }}</strong><span>Meine Wünsche</span></div>
+  <div class="stat"><strong>{{ counts.requested }}</strong><span>Angefragt</span></div>
+  <div class="stat"><strong>{{ counts.available }}</strong><span>Vorhanden</span></div>
+</div>
+<form method="get" class="filterbar">
+  <div><label for="request-state">Status filtern</label><select name="state" id="request-state">
+    <option value="">Alle Status</option>
+    {% for value,label in state_choices %}<option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select></div>
+  <button type="submit">Filtern</button>
+  <a class="reset-link" href="{% url 'my_requests' %}">Zurücksetzen</a>
+</form>
+<div class="results-head"><h2>Deine Anfragen</h2><span>{{ page_obj.paginator.count }} Treffer</span></div>
+{% for wish in page_obj %}
+<article class="wish-row">
+  <div><strong>{{ wish.media.title }}</strong><small>{{ wish.media.get_kind_display }}{% if wish.media.year %} · {{ wish.media.year }}{% endif %} · {{ wish.created_at|date:"d.m.Y" }}</small></div>
+  <div>
+    {% if wish.media.state == "available" %}<span class="status status-available">Vorhanden</span>
+    {% elif wish.media.state == "requested" %}<span class="status status-requested">Angefragt</span>
+    {% else %}<span class="status status-progress">In Bearbeitung</span>{% endif %}
+    <a href="{% url 'media_detail' wish.media_id %}">Details</a>
+    <a href="{% url 'delete_my_request' wish.pk %}" aria-label="Anfrage für {{ wish.media.title }} löschen">Löschen</a>
+  </div>
+</article>
+{% empty %}
+<section class="empty-state"><h3>Keine passenden Wünsche</h3><p>Du hast noch keine Anfragen in dieser Ansicht.</p><a href="{% url 'new_request' %}">Medienwunsch erstellen</a></section>
+{% endfor %}
+{% if page_obj.has_other_pages %}
+<nav class="pagination" aria-label="Weitere Anfragen">
+  {% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}">← Zurück</a>{% endif %}
+  <span>Seite {{ page_obj.number }} von {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}">Weiter →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

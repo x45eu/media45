@@ -1,0 +1,25 @@
+{% extends "catalog/base.html" %}
+{% load static %}
+{% block content %}
+<section class="account-form">
+  <p class="eyebrow">KONTOSCHUTZ</p><h1>Zweiten Faktor bestätigen</h1>
+  <p>Gib den sechsstelligen Code aus deiner Authenticator-App oder einen unbenutzten Notfallcode ein.</p>
+  <form method="post" class="card">
+    {% csrf_token %}
+    <label for="mfa-code">Authenticator- oder Notfallcode</label>
+    <input id="mfa-code" name="code" autocomplete="one-time-code" maxlength="64" required autofocus>
+    <button type="submit">Anmeldung bestätigen</button>
+  </form>
+  <section class="card">
+    <h2>Alternativ mit Sicherheitsschlüssel bestätigen</h2>
+    <p>Wenn du bereits einen Passkey oder YubiKey registriert hast, kannst du ihn statt eines TOTP-Codes verwenden.</p>
+    <form id="passkey-auth" data-options="{% url 'passkeys_auth_options' %}" data-finish="{% url 'passkeys_auth_finish' %}">{% csrf_token %}
+      <button type="submit">Mit Passkey / YubiKey bestätigen</button>
+    </form>
+    <p role="status" id="passkey-status"></p>
+  </section>
+  <script src="{% static 'catalog/passkeys.js' %}" defer></script>
+  <p><small>Bei sechs ungültigen Versuchen ist die Verifikation vorübergehend gesperrt.</small></p>
+  <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button type="submit">Abmelden</button></form>
+</section>
+{% endblock %}

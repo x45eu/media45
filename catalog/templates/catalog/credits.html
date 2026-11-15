@@ -1,0 +1,16 @@
+{% extends "catalog/base.html" %}{% load static %}
+{% block content %}
+<section class="account-form">
+  <h1>Quellen &amp; Bildnachweise</h1>
+  <div class="card">
+    <p>Für Film- und Serienposter nutzt media45 die Daten und Bilder von
+    <a href="https://www.themoviedb.org" rel="noopener noreferrer">TMDB (The Movie Database)</a>.</p>
+    <p><a href="https://www.themoviedb.org" rel="noopener noreferrer">
+      <img src="{% static 'catalog/tmdb-logo.svg' %}" alt="TMDB" width="165" height="32" style="max-width:100%;height:auto">
+    </a></p>
+    <p lang="en">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p>Die Poster werden ausschließlich serverseitig abgerufen und lokal zwischengespeichert.
+    Die Rechte an den einzelnen Bildern verbleiben bei den jeweiligen Rechteinhabern.</p>
+  </div>
+</section>
+{% endblock %}

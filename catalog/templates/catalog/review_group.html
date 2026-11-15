@@ -1,0 +1,57 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<p><a href="{% url 'review_matches' %}">← Zurück zu Freigaben</a></p>
+<section class="review-hero">
+  <div><p class="eyebrow">TITELGRUPPE KORRIGIEREN</p><h1>{{ group.suggested_title }}</h1>
+  <p>{{ group.get_kind_display }} · {{ group.get_root_display }} · {{ group.file_count }} Dateien</p></div>
+</section>
+{% if linked %}<p class="message">Achtung: Diese Gruppe enthält bereits verknüpfte Dateien. Änderungen werden bei der Bestätigung auf Konflikte geprüft.</p>{% endif %}
+<section class="card">
+<h2>Erneut suchen</h2>
+<p>Suche mit einer anderen Schreibweise, einem Originaltitel oder einem alternativen Originaltitel. Die Suche ergänzt nur Kandidaten, sie bestätigt nichts automatisch.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="search">
+<label for="phrase">Suchbegriff</label>
+<input name="phrase" id="phrase" minlength="2" maxlength="100" required value="{{ group.suggested_title }}" style="width:100%">
+<button type="submit">Neue Treffer suchen</button>
+</form></section>
+<section class="card">
+<h2>Exakte Kennung prüfen</h2>
+<p>Für Filme und Serien eine IMDb-ID (z. B. tt0816692). Die Kennung wird beim öffentlichen Anbieter geprüft.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="lookup">
+<label for="identifier">IMDb-ID</label>
+<input name="identifier" id="identifier" maxlength="80" required style="width:100%">
+<button type="submit">Kennung prüfen und Vorschlag hinzufügen</button>
+</form></section>
+{% if group.kind == "movie" %}
+<section class="card">
+<h2>IMDb-ID manuell zuordnen</h2>
+<p>Wenn TMDB deine IMDb-ID nicht findet, ist sie nicht automatisch falsch. Öffne <a href="https://www.imdb.com/" target="_blank" rel="noopener noreferrer">IMDb</a> selbst und vergleiche Titel und Erscheinungsjahr mit deinem Film. Übernimm nur die Kennung aus der offiziellen Titeladresse.</p>
+<form method="post">
+  {% csrf_token %}<input type="hidden" name="action" value="manual">
+  <p><label for="manual-identifier">IMDb-ID (tt…)</label><input id="manual-identifier" name="identifier" pattern="tt[0-9]{7,12}" maxlength="14" placeholder="tt1234567" required style="width:100%"></p>
+  <p><label for="manual-title">Titel laut IMDb</label><input id="manual-title" name="title" minlength="2" maxlength="300" value="{{ group.suggested_title }}" required style="width:100%"></p>
+  <p><label for="manual-year">Erscheinungsjahr (optional)</label><input id="manual-year" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4"></p>
+  <p><label><input type="checkbox" name="checked_imdb" value="on" required> Ich habe die IMDb-Seite selbst geöffnet und die Kennung mit dem Film verglichen.</label></p>
+  <button type="submit">Manuellen Vorschlag speichern</button>
+</form>
+<p><small>Wichtig: Hier prüft media45 nur das Format der ID, nicht die Existenz bei IMDb. Du übernimmst die inhaltliche Prüfung.</small></p>
+</section>
+{% endif %}
+<section class="card">
+<h2>Gefundene Vorschläge</h2>
+{% for candidate in candidates %}
+<div class="wish-row"><div><strong>{{ candidate.title }}</strong><small>{% if candidate.year %}{{ candidate.year }} · {% endif %}{{ candidate.external_provider }}:{{ candidate.external_id }}{% if candidate.manually_verified %} · MANUELL GEPRÜFT{% endif %}</small>{% if candidate.external_provider == "imdb" %}<small><a target="_blank" rel="noopener noreferrer" href="https://www.imdb.com/title/{{ candidate.external_id|urlencode }}/">Auf IMDb vergleichen</a></small>{% endif %}</div></div>
+{% empty %}<p>Für diese Gruppe gibt es noch keine Treffer.</p>{% endfor %}
+<p>Zur Bestätigung gehe zurück zu <a href="{% url 'review_matches' %}">Freigaben</a> und wähle dort den passenden Treffer aus.</p>
+</section>
+<section class="card">
+<h2>Zurückstellen</h2>
+<p>Keiner der Treffer passt? Die Gruppe bleibt im Inventar, verschwindet aber aus den offenen Freigaben.</p>
+<form method="post">{% csrf_token %}
+{% if group.review_deferred %}
+<input type="hidden" name="action" value="restore"><button type="submit">Wieder in Freigaben anzeigen</button>
+{% else %}
+<input type="hidden" name="action" value="defer"><button type="submit">Diese Titelgruppe zurückstellen</button>
+{% endif %}
+</form></section>
+{% endblock %}

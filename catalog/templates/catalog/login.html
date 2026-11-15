@@ -1,0 +1,23 @@
+{% extends "catalog/base.html" %}{% load static %}{% block content %}
+<section class="account-form">
+<h1>Anmelden</h1>
+<p>Konten werden ausschließlich durch Administratoren angelegt.</p>
+<section class="card">
+<h2>Mit Passkey / YubiKey anmelden</h2>
+<p>Gib deinen Benutzernamen ein und bestätige den Zugriff mit deinem registrierten Sicherheitsschlüssel. Ein Passwort ist nicht erforderlich.</p>
+<form id="passkey-login" data-options="{% url 'passwordless_options' %}" data-finish="{% url 'passwordless_finish' %}">
+{% csrf_token %}
+<p><label for="passkey-username">Benutzername</label>
+<input id="passkey-username" type="text" name="username" autocomplete="username" required maxlength="150"></p>
+<button type="submit">Mit Passkey anmelden</button>
+</form>
+<p id="passkey-status" role="status"></p>
+</section>
+<section class="card">
+<h2>Alternativ mit Passwort anmelden</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Mit Passwort anmelden</button></form>
+<p><small>Bei Konten mit Zwei-Faktor-Schutz folgt die TOTP- oder YubiKey-Bestätigung.</small></p>
+</section>
+</section>
+<script src="{% static 'catalog/passkeys.js' %}" defer></script>
+{% endblock %}

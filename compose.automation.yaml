@@ -1,0 +1,23 @@
+# Add this file beside compose.yaml and compose.scan.yaml.
+# The dedicated automation service has NAS mounts; web/worker never receive them.
+# Activate only after an existing manual match_media --all run has finished.
+services:
+  scheduler:
+    build: .
+    restart: unless-stopped
+    profiles: ["automation"]
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - "${MEDIA45_MOVIES_PATH:?Set MEDIA45_MOVIES_PATH in your private .env}:/media/movies:ro"
+      - "${MEDIA45_SERIES_PATH:?Set MEDIA45_SERIES_PATH in your private .env}:/media/series:ro"
+    networks: [internal]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: ["python", "manage.py", "auto_media", "--loop", "--match-limit", "10", "--poll-seconds", "900"]

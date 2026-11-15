@@ -1,0 +1,28 @@
+{% extends "catalog/base.html" %}{% block content %}
+<h1>Medienwunsch erstellen</h1>
+<p>Filme und Serien werden serverseitig über TMDB anhand ihrer IMDb-Kennung abgeglichen. Bitte einen Treffer auswählen.</p>
+<form method="get">
+  <label for="kind">Medientyp</label>
+  <select name="kind" id="kind">
+    <option value="movie" {% if kind == "movie" %}selected{% endif %}>Film</option>
+    <option value="series" {% if kind == "series" %}selected{% endif %}>Serie</option>
+  </select>
+  <label for="q">Film- oder Serientitel</label>
+  <input id="q" type="search" name="q" minlength="2" maxlength="100" value="{{ query }}" required>
+  <button type="submit">Suchen</button>
+</form>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+{% if hits %}
+<h2>Verifizierte Treffer</h2>
+{% for hit in hits %}
+<section class="card">
+  <strong>{{ hit.title }}</strong> <small>{{ hit.year|default:"" }} · {{ hit.external_provider }}:{{ hit.external_id }}</small>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="selection" value="{{ hit.selection }}">
+    <button type="submit">Diesen Titel anfragen</button>
+  </form>
+</section>
+{% endfor %}
+{% elif query and not error %}<p>Keine eindeutigen Treffer gefunden.</p>{% endif %}
+{% endblock %}

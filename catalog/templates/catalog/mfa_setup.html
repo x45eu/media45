@@ -1,0 +1,25 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="account-form">
+  <p class="eyebrow">KONTOSCHUTZ</p><h1>Zwei-Faktor-Anmeldung einrichten</h1>
+  {% if pending %}
+  <p>Öffne eine Authenticator-App auf deinem Handy und lege dort einen neuen Eintrag an. Tippe diesen Schlüssel ein (keinen externen QR-Dienst verwenden):</p>
+  <div class="card"><code style="font-size:1.1rem;overflow-wrap:anywhere">{{ pending }}</code></div>
+  <p><small>Typ: zeitbasierter Einmalcode (TOTP), 6 Ziffern, 30 Sekunden. Konto: {{ user.username }} · Anbieter: media45.</small></p>
+  <form method="post" class="card">
+    {% csrf_token %}<input type="hidden" name="action" value="confirm">
+    <label for="totp-code">Aktuellen sechsstelligen Code eingeben</label>
+    <input id="totp-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+    <button type="submit">2FA aktivieren</button>
+  </form>
+  {% else %}
+  <p>Administratoren müssen TOTP aktivieren, bevor sie media45 nutzen können. Andere Nutzer können TOTP freiwillig einrichten.</p>
+  <form method="post" class="card">
+    {% csrf_token %}<input type="hidden" name="action" value="begin">
+    <label for="password">Zur Sicherheit: aktuelles Passwort</label>
+    <input id="password" type="password" name="password" autocomplete="current-password" required>
+    <button type="submit">Einrichtung beginnen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+secrets/
+data/
+backups/
+staticfiles/
+*.sqlite3
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+compose.scan.yaml

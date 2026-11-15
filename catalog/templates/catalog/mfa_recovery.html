@@ -1,0 +1,11 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="account-form">
+  <p class="eyebrow">WICHTIG: NUR EINMAL SICHTBAR</p>
+  <h1>Deine zehn Notfallcodes</h1>
+  <p>Speichere diese Codes jetzt offline in einem sicheren Passwortmanager. Jeder Code funktioniert genau einmal. Nach dem Verlassen dieser Seite können sie nicht erneut angezeigt werden.</p>
+  <div class="card">{% for code in codes %}<p><code>{{ code }}</code></p>{% endfor %}</div>
+  <p>Wenn du sowohl die Authenticator-App als auch sämtliche Notfallcodes verlierst, ist ein administrativer Wiederherstellungsprozess notwendig. Dieser ist noch nicht automatisiert.</p>
+  <a class="primary-link" href="{% url 'index' %}">Codes gesichert – weiter zu media45</a>
+</section>
+{% endblock %}

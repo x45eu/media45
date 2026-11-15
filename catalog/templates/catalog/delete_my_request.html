@@ -1,0 +1,15 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<p><a class="back-link" href="{% url 'my_requests' %}">← Zurück zu meinen Wünschen</a></p>
+<section class="card" style="max-width:680px;margin:1.5rem 0;">
+  <p class="eyebrow">ANFRAGE VERWALTEN</p>
+  <h1>Medienwunsch löschen?</h1>
+  <p>Willst du deine Anfrage für <strong>{{ wish.media.title }}</strong>{% if wish.media.year %} ({{ wish.media.year }}){% endif %} wirklich löschen?</p>
+  <p>Dein persönlicher Wunsch wird entfernt. Bereits vorhandene Filme und Serien sowie Wünsche anderer Nutzer bleiben unverändert.</p>
+  <form method="post" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem;">
+    {% csrf_token %}
+    <button type="submit" style="background:#b94b4b;color:#fff;">Anfrage endgültig löschen</button>
+    <a href="{% url 'my_requests' %}">Abbrechen</a>
+  </form>
+</section>
+{% endblock %}

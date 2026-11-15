@@ -1,0 +1,88 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<article class="detail-page" aria-labelledby="media-title">
+  <nav class="detail-breadcrumb" aria-label="Brotkrumennavigation">
+    <a class="back-link" href="{% url 'index' %}">← Zurück zum Katalog</a>
+  </nav>
+
+  <div class="detail-layout">
+    <div class="detail-poster-column">
+      <div class="media-art media-art-{{ item.kind }} detail-art">
+        {% if item.has_cover %}
+          <img class="cover-image" src="{% url 'media_cover' item.pk %}" alt="Cover von {{ item.title }}" width="480" height="720">
+        {% else %}
+          <span class="art-mark" aria-hidden="true">{{ item.title|slice:":1"|upper }}</span>
+          <span class="art-kind">{{ item.get_kind_display }}</span>
+        {% endif %}
+      </div>
+      <p class="detail-local-note">Cover werden ausschließlich von media45 lokal ausgeliefert.</p>
+    </div>
+
+    <div class="detail-copy">
+      <div class="detail-heading">
+        <p class="eyebrow">{{ item.get_kind_display }}{% if item.year %} <span aria-hidden="true">·</span> {{ item.year }}{% endif %}</p>
+        <h1 id="media-title">{{ item.title }}</h1>
+        <div class="detail-heading-meta">
+          {% if item.state == "available" %}
+            <span class="status status-available">Vorhanden</span>
+          {% elif item.state == "requested" %}
+            <span class="status status-requested">Angefragt</span>
+          {% else %}
+            <span class="status status-progress">In Bearbeitung</span>
+          {% endif %}
+          {% if details and details.runtime_minutes %}
+            <span class="detail-meta-text">{{ details.runtime_minutes }} Min.{% if item.kind == "series" %} pro Folge{% endif %}</span>
+          {% endif %}
+          {% if details and details.rating is not None %}
+            <span class="detail-rating" aria-label="TMDB-Bewertung: {{ details.rating|floatformat:1 }} von 10">
+              <span aria-hidden="true">★</span> {{ details.rating|floatformat:1 }} <small>/ 10</small>
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if details and details.genres %}
+        <div class="detail-genres" aria-label="Genres">
+          {% for genre in details.genres %}<span class="detail-genre">{{ genre }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      <section class="detail-section" aria-labelledby="synopsis-title">
+        <h2 id="synopsis-title">Handlung</h2>
+        {% if details and details.synopsis %}
+          <div class="detail-synopsis">{{ details.synopsis|linebreaks }}</div>
+        {% else %}
+          <p class="detail-empty">Für diesen Titel liegt noch keine Inhaltsbeschreibung vor.</p>
+        {% endif %}
+      </section>
+
+      <section class="detail-section detail-information" aria-labelledby="information-title">
+        <h2 id="information-title">Informationen</h2>
+        <dl class="detail-facts">
+          <div><dt>Medientyp</dt><dd>{{ item.get_kind_display }}</dd></div>
+          <div><dt>Erscheinungsjahr</dt><dd>{{ item.year|default:"Nicht bekannt" }}</dd></div>
+          {% if details and details.runtime_minutes %}
+            <div><dt>{% if item.kind == "series" %}Laufzeit pro Folge{% else %}Laufzeit{% endif %}</dt><dd>{{ details.runtime_minutes }} Minuten</dd></div>
+          {% endif %}
+          {% if details and details.rating is not None %}
+            <div><dt>TMDB-Bewertung</dt><dd>{{ details.rating|floatformat:1 }} von 10</dd></div>
+          {% endif %}
+          <div><dt>Katalogkennung</dt><dd>{{ item.external_provider }}: {{ item.external_id }}</dd></div>
+          <div><dt>Verknüpfte Dateien</dt><dd>{{ item.file_count }}</dd></div>
+        </dl>
+      </section>
+
+      {% if item.state != "available" and user.is_authenticated %}
+        <div class="detail-actions">
+          <a class="primary-link" href="{% url 'new_request' %}?kind={{ item.kind }}&amp;q={{ item.title|urlencode }}">Nach diesem Titel suchen</a>
+        </div>
+      {% endif %}
+
+      <p class="detail-source-note">
+        {% if details %}TMDB-Metadaten lokal gespeichert · Stand: {{ details.fetched_at|date:"d.m.Y" }}.{% else %}Noch keine lokal gespeicherten TMDB-Details.{% endif %}
+        Keine externen Bildaufrufe, direkten Dateipfade oder Wiedergabelinks.
+      </p>
+    </div>
+  </div>
+</article>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "catalog/base.html" %}
+{% load static %}
+{% block content %}
+<section class="review-hero"><div><p class="eyebrow">KONTOSCHUTZ</p><h1>Passkeys und YubiKeys</h1>
+<p>Registriere FIDO2-Sicherheitsschlüssel oder gerätegebundene Passkeys. Registrierte Passkeys lassen sich sowohl zur passwortlosen Anmeldung (mit Benutzername) als auch als zweite Bestätigung nach Passwort verwenden. TOTP bleibt erhalten.</p></div></section>
+<section class="card account-form">
+<h2>Neuen Schlüssel registrieren</h2>
+<p>Du benötigst dein aktuelles Passwort. Dein Browser fordert dann den Sicherheitsschlüssel, die PIN oder eine biometrische Bestätigung an.</p>
+<form id="passkey-register" data-options="{% url 'passkeys_register_options' %}" data-finish="{% url 'passkeys_register_finish' %}">
+{% csrf_token %}
+<p><label for="key-name">Bezeichnung</label><input id="key-name" name="name" maxlength="80" required placeholder="z. B. YubiKey USB-C"></p>
+<p><label for="key-password">Aktuelles Passwort</label><input id="key-password" name="password" type="password" autocomplete="current-password" required></p>
+<button type="submit">Passkey hinzufügen</button>
+</form><p role="status" id="passkey-status"></p></section>
+<section class="card account-form">
+<h2>Registrierte Schlüssel</h2>
+{% for key in credentials %}
+<div class="wish-row"><div><strong>{{ key.name }}</strong><small>Registriert: {{ key.created_at|date:"d.m.Y" }}{% if key.last_used_at %} · Zuletzt verwendet: {{ key.last_used_at|date:"d.m.Y H:i" }}{% endif %}</small></div>
+<form action="{% url 'passkeys_remove' key.pk %}" method="post">{% csrf_token %}
+<label>Passwort <input type="password" name="password" autocomplete="current-password" required></label>
+{% if user.media45_totp %}<label>Aktueller TOTP-Code <input name="code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required></label>{% endif %}
+<button type="submit">Entfernen</button>
+</form></div>
+{% empty %}<p>Es sind noch keine Passkeys registriert.</p>{% endfor %}
+</section>
+<script src="{% static 'catalog/passkeys.js' %}" defer></script>
+{% endblock %}
