@@ -1,0 +1,32 @@
+{% extends "catalog/base.html" %}
+{% block content %}
+<section class="detail-page" aria-labelledby="status-title">
+  <p class="eyebrow">Administration · lokale Daten</p>
+  <h1 id="status-title">Systemstatus</h1>
+  <p class="privacy-note">Nur lesende lokale Prüfungen. Keine externen Netzwerkabfragen und kein Zugriff auf NAS-Verzeichnisse. Letzte Läufe bestätigen nicht, dass ein Docker-Dienst gerade aktiv ist.</p>
+  <div class="stats">
+    <div class="stat"><strong>{{ total }}</strong><span>Filme und Serien im Katalog</span></div>
+    <div class="stat"><strong>{{ indexed_files }}</strong><span>Inventarisierte Videodateien (Datenbank)</span></div>
+    <div class="stat"><strong>{{ checked_at|date:"d.m.Y H:i" }}</strong><span>Abfragezeit (Europe/Berlin)</span></div>
+  </div>
+  <div class="card">
+    <h2>Cover</h2>
+    <p><strong>{{ cover_count }}</strong> vorhanden und gültig · <strong>{{ cover_missing }}</strong> fehlen oder sind abgelaufen</p>
+    <small>Lokale Cover-Dateien im Web-Container; kein Download beim Aufruf.</small>
+  </div>
+  <div class="card">
+    <h2>TMDB-Metadaten</h2>
+    <p><strong>{{ details_count }}</strong> aktuell und IMDb-verifiziert · <strong>{{ details_missing }}</strong> fehlen, sind abgelaufen oder passen nicht zur IMDb-ID</p>
+    <small>Metadaten gelten für 90 Tage als aktuell.</small>
+  </div>
+  <div class="card">
+    <h2>Automatische Abläufe</h2>
+    <dl class="detail-facts">
+      <div><dt>NAS-Inventur</dt><dd>{% if last_scan %}Letzter abgeschlossener Scan: {{ last_scan|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Scan vermerkt{% endif %}</dd></div>
+      <div><dt>TMDB-Details</dt><dd>{% if last_details %}Letzter abgeschlossener Lauf: {{ last_details|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Lauf vermerkt{% endif %}</dd></div>
+    </dl>
+    <small>Die Seite überprüft keinen Docker-Containerzustand und greift nicht auf das NAS zu. Für Live-Dienststatus weiterhin Docker Compose verwenden.</small>
+  </div>
+  <p><a href="{% url 'index' %}">Zurück zum Katalog</a></p>
+</section>
+{% endblock %}

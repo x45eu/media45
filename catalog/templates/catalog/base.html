@@ -213,6 +213,7 @@
         <a href="{% url 'mfa_settings' %}">2FA</a>
         <a href="{% url 'passkeys_manage' %}">Passkeys</a>
         {% if user.is_superuser %}<a href="{% url 'review_matches' %}">Freigaben</a>{% endif %}
+        {% if user.is_superuser %}<a href="{% url 'system_status' %}">Systemstatus</a>{% endif %}
         {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
         <form action="/logout/" method="post">{% csrf_token %}<button type="submit">Abmelden</button></form>
       {% else %}
@@ -230,6 +231,7 @@
           <a href="{% url 'mfa_settings' %}">2FA</a>
           <a href="{% url 'passkeys_manage' %}">Passkeys</a>
           {% if user.is_superuser %}<a href="{% url 'review_matches' %}">Freigaben</a>{% endif %}
+        {% if user.is_superuser %}<a href="{% url 'system_status' %}">Systemstatus</a>{% endif %}
           {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
           <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button type="submit">Abmelden</button></form>
         {% else %}

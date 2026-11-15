@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path
-from catalog import views, mfa_views, passkey_views, pwa
+from catalog import views, mfa_views, passkey_views, pwa, status_views
 from catalog.login_guard import ProtectedAuthenticationForm, ProtectedAdminAuthenticationForm
 
 admin.site.login_form = ProtectedAdminAuthenticationForm
@@ -17,6 +17,7 @@ urlpatterns = [
     path("media/<int:pk>/", views.media_detail, name="media_detail"),
     path("media/<int:pk>/cover/", views.cover_image, name="media_cover"),
     path("review/", views.review_matches, name="review_matches"),
+    path("system/status/", status_views.system_status, name="system_status"),
     path("review/group/<int:pk>/", views.review_group, name="review_group"),
     path("login/", auth_views.LoginView.as_view(template_name="catalog/login.html", authentication_form=ProtectedAuthenticationForm), name="login"),
     path("account/mfa/", mfa_views.verify, name="mfa_verify"),
