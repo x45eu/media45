@@ -1,0 +1,19 @@
+# Optional TMDB-only maintenance service; no NAS or cover volumes mounted.
+# Run: docker compose -f compose.yaml -f compose.details.yaml --profile metadata up -d details-refresh
+services:
+  details-refresh:
+    build: .
+    restart: unless-stopped
+    profiles: ["metadata"]
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: ["python", "manage.py", "auto_details", "--loop", "--limit", "30", "--poll-seconds", "3600", "--interval-hours", "24"]
