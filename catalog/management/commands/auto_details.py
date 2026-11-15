@@ -13,7 +13,8 @@ from django.db import connection
 from django.utils import timezone
 
 from catalog.models import ProviderThrottle
-from catalog.health_events import DETAILS_FAILURE, record_failure, clear_failure
+from catalog.health_events import (DETAILS_FAILURE, record_failure, clear_failure,
+                                   DETAILS_HEARTBEAT, record_heartbeat)
 
 
 LOCK_ID = 45142027
@@ -56,6 +57,8 @@ class Command(BaseCommand):
             self.stdout.write("TMDB: Ein anderer Metadaten-Durchlauf ist bereits aktiv.")
             return False
         try:
+            # Recorded each poll, even when no TMDB refresh is due.
+            record_heartbeat(DETAILS_HEARTBEAT)
             if not (getattr(settings, "TMDB_READ_ACCESS_TOKEN", "") or "").strip():
                 record_failure(DETAILS_FAILURE)
                 self.stderr.write("TMDB: Kein Token konfiguriert; Aktualisierung uebersprungen.")

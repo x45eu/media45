@@ -71,3 +71,39 @@ class HealthMarkerTests(TestCase):
         DetailsCommand()._run_if_due(1, timedelta(hours=24))
         self.assertTrue(ProviderThrottle.objects.filter(provider=DETAILS_FAILURE).exists())
         self.assertFalse(ProviderThrottle.objects.filter(provider=DETAILS_KEY).exists())
+
+
+class HeartbeatTests(TestCase):
+    def test_heartbeat_keys_are_whitelisted_and_privacy_safe(self):
+        from catalog.health_events import SCHEDULER_HEARTBEAT, DETAILS_HEARTBEAT, record_heartbeat
+        with self.assertRaises(ValueError):
+            record_heartbeat("secret=/private/path")
+        record_heartbeat(SCHEDULER_HEARTBEAT)
+        record_heartbeat(DETAILS_HEARTBEAT)
+        self.assertTrue(ProviderThrottle.objects.filter(provider=SCHEDULER_HEARTBEAT).exists())
+        self.assertTrue(ProviderThrottle.objects.filter(provider=DETAILS_HEARTBEAT).exists())
+
+    def test_heartbeat_age_is_not_equivalent_to_live_container_status(self):
+        from catalog.status_views import assess_heartbeat
+        now = timezone.now()
+        self.assertEqual(assess_heartbeat(None, now, max_age=timedelta(minutes=45))["level"], "unknown")
+        self.assertEqual(assess_heartbeat(now - timedelta(minutes=10), now, max_age=timedelta(minutes=45))["level"], "ok")
+        self.assertEqual(assess_heartbeat(now - timedelta(minutes=46), now, max_age=timedelta(minutes=45))["level"], "warning")
+        self.assertEqual(assess_heartbeat(now + timedelta(minutes=1), now, max_age=timedelta(minutes=45))["level"], "unknown")
+
+    @patch("catalog.management.commands.auto_media.call_command")
+    def test_scheduler_records_heartbeat_even_when_no_scan_is_due(self, cmd):
+        from catalog.health_events import SCHEDULER_HEARTBEAT
+        ProviderThrottle.objects.create(provider=SCAN_KEY, last_call=timezone.now())
+        MediaCommand()._cycle(10)
+        self.assertTrue(ProviderThrottle.objects.filter(provider=SCHEDULER_HEARTBEAT).exists())
+        cmd.assert_called_once()
+
+    @override_settings(TMDB_READ_ACCESS_TOKEN="dummy-token")
+    @patch("catalog.management.commands.auto_details.call_command")
+    def test_details_records_heartbeat_even_when_no_refresh_due(self, cmd):
+        from catalog.health_events import DETAILS_HEARTBEAT
+        ProviderThrottle.objects.create(provider=DETAILS_KEY, last_call=timezone.now())
+        self.assertFalse(DetailsCommand()._run_if_due(1, timedelta(hours=24)))
+        self.assertTrue(ProviderThrottle.objects.filter(provider=DETAILS_HEARTBEAT).exists())
+        cmd.assert_not_called()

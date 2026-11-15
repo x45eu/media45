@@ -13,7 +13,8 @@ from . import covers
 from .management.commands.auto_details import STATE_KEY as DETAILS_KEY
 from .management.commands.auto_media import STATE_KEY as SCAN_KEY
 from .models import Media, MediaDetails, ProviderThrottle, ScannedFile
-from .health_events import SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE
+from .health_events import (SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE,
+                            SCHEDULER_HEARTBEAT, DETAILS_HEARTBEAT)
 
 
 def assess_freshness(timestamp, now, *, max_age=timedelta(hours=26)):
@@ -23,6 +24,15 @@ def assess_freshness(timestamp, now, *, max_age=timedelta(hours=26)):
     if now - timestamp <= max_age:
         return {"level": "ok", "label": "Im Zeitfenster"}
     return {"level": "warning", "label": "Überfällig"}
+
+
+def assess_heartbeat(timestamp, now, *, max_age):
+    """Recent DB contact, never a container health check."""
+    if timestamp is None or timestamp > now:
+        return {"level": "unknown", "label": "Keine Meldung"}
+    if now - timestamp <= max_age:
+        return {"level": "ok", "label": "Kürzlich gemeldet"}
+    return {"level": "warning", "label": "Meldung überfällig"}
 
 
 def assess_completeness(current, total):
@@ -66,7 +76,8 @@ def system_status(request):
 
     # These timestamps indicate completed scheduled cycles, NOT container liveness.
     stamps = dict(ProviderThrottle.objects.filter(
-        provider__in=(DETAILS_KEY, SCAN_KEY, SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE),
+        provider__in=(DETAILS_KEY, SCAN_KEY, SCAN_FAILURE, MATCH_FAILURE, DETAILS_FAILURE,
+                     SCHEDULER_HEARTBEAT, DETAILS_HEARTBEAT),
     ).values_list("provider", "last_call"))
 
     # The scanner only sees read-only NAS paths; the web process never mounts them.
@@ -79,6 +90,12 @@ def system_status(request):
         "indexed_files": ScannedFile.objects.filter(root__in=("movies", "series")).count(),
         "last_details": stamps.get(DETAILS_KEY),
         "last_scan": stamps.get(SCAN_KEY),
+        "last_scheduler_heartbeat": stamps.get(SCHEDULER_HEARTBEAT),
+        "last_details_heartbeat": stamps.get(DETAILS_HEARTBEAT),
+        "scheduler_heartbeat_health": assess_heartbeat(
+            stamps.get(SCHEDULER_HEARTBEAT), now, max_age=timedelta(minutes=45)),
+        "details_heartbeat_health": assess_heartbeat(
+            stamps.get(DETAILS_HEARTBEAT), now, max_age=timedelta(hours=2, minutes=30)),
         "cover_health": assess_completeness(cover_count, total),
         "details_health": assess_completeness(current_details, total),
         "scan_health": assess_failure(assess_freshness(stamps.get(SCAN_KEY), now), stamps.get(SCAN_FAILURE), now),

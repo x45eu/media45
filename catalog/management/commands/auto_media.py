@@ -13,7 +13,8 @@ from django.db import connection
 from django.utils import timezone
 
 from catalog.models import ProviderThrottle
-from catalog.health_events import (SCAN_FAILURE, MATCH_FAILURE, record_failure, clear_failure)
+from catalog.health_events import (SCAN_FAILURE, MATCH_FAILURE, record_failure, clear_failure,
+                                   SCHEDULER_HEARTBEAT, record_heartbeat)
 
 log = logging.getLogger(__name__)
 LOCK_ID = 45142026
@@ -56,6 +57,8 @@ class Command(BaseCommand):
                 cursor.execute("SELECT pg_advisory_unlock(%s)", [LOCK_ID])
 
     def _cycle(self, limit):
+        # A heartbeat proves a scheduler cycle reached the database, not Docker liveness.
+        record_heartbeat(SCHEDULER_HEARTBEAT)
         now = timezone.now()
         record, _ = ProviderThrottle.objects.get_or_create(
             provider=STATE_KEY,

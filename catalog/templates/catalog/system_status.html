@@ -32,12 +32,15 @@
   </div>
   <div class="card">
     <h2>Automatische Abläufe</h2>
+    <p class="health-note">Dienstkontakt ist kein Docker-Healthcheck: angezeigt wird nur, wann der jeweilige Prozess zuletzt einen Prüfzyklus in der Datenbank begonnen hat.</p>
     <dl class="detail-facts">
+      <div><dt>Scheduler-Kontakt</dt><dd><span class="health health-{{ scheduler_heartbeat_health.level }}">{{ scheduler_heartbeat_health.label }}</span> {% if last_scheduler_heartbeat %}Letzte Meldung: {{ last_scheduler_heartbeat|date:"d.m.Y H:i" }}{% else %}Noch kein Prüfzyklus vermerkt{% endif %}</dd></div>
+      <div><dt>TMDB-Dienstkontakt</dt><dd><span class="health health-{{ details_heartbeat_health.level }}">{{ details_heartbeat_health.label }}</span> {% if last_details_heartbeat %}Letzte Meldung: {{ last_details_heartbeat|date:"d.m.Y H:i" }}{% else %}Noch kein Prüfzyklus vermerkt{% endif %}</dd></div>
       <div><dt>NAS-Inventur</dt><dd><span class="health health-{{ scan_health.level }}">{{ scan_health.label }}</span> {% if last_scan %}Letzter abgeschlossener Scan: {{ last_scan|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Scan vermerkt{% endif %}</dd></div>
       <div><dt>Metadatensuche</dt><dd><span class="health health-{{ match_health.level }}">{{ match_health.label }}</span> Nur aufgezeichnete Ausnahmen; keine vollständige Laufzeitüberwachung</dd></div>
       <div><dt>TMDB-Details</dt><dd><span class="health health-{{ details_run_health.level }}">{{ details_run_health.label }}</span> {% if last_details %}Letzter abgeschlossener Lauf: {{ last_details|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Lauf vermerkt{% endif %}</dd></div>
     </dl>
-    <small>Ampeln zeigen Datenvollständigkeit und das Alter gespeicherter Läufe (Richtwert: 26 Stunden). Rot bedeutet eine protokollierte Ausnahme oder eine fehlende TMDB-Konfiguration – nicht zwingend einen ausgefallenen Container. Einzelne vom Datenabruf abgefangene API-Fehler werden noch nicht vollständig erkannt. Es werden keine Fehlerdetails, NAS-Pfade oder Zugangsdaten in der Datenbank gespeichert. Für Live-Dienststatus weiterhin Docker Compose verwenden.</small>
+    <small>Ampeln zeigen Datenvollständigkeit und das Alter gespeicherter Läufe (Richtwert: 26 Stunden). Rot bedeutet eine protokollierte Ausnahme oder eine fehlende TMDB-Konfiguration – nicht zwingend einen ausgefallenen Container. Einzelne vom Datenabruf abgefangene API-Fehler werden noch nicht vollständig erkannt. Es werden keine Fehlerdetails, NAS-Pfade oder Zugangsdaten in der Datenbank gespeichert. Für Live-Dienststatus weiterhin Docker Compose verwenden. Dienstkontakte: Scheduler nach 45 Minuten und TMDB-Dienst nach 2 Stunden 30 Minuten ohne neue Meldung gelb; ein blockierter laufender Prüfzyklus kann ebenfalls gelb werden.</small>
   </div>
   <p><a href="{% url 'index' %}">Zurück zum Katalog</a></p>
 </section>
