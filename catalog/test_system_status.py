@@ -54,3 +54,36 @@ class SystemStatusTests(TestCase):
         session["media45_mfa_verified_user"] = self.admin.pk
         session.save()
         self.assertEqual(self.client.post(reverse("system_status")).status_code, 405)
+
+
+class StatusAssessmentTests(TestCase):
+    def test_no_last_run_is_unknown(self):
+        from catalog.status_views import assess_freshness
+        self.assertEqual(assess_freshness(None, timezone.now())["level"], "unknown")
+
+    def test_recent_run_is_not_a_liveness_claim(self):
+        from catalog.status_views import assess_freshness
+        now = timezone.now()
+        self.assertEqual(assess_freshness(now - timedelta(hours=24), now)["level"], "ok")
+
+    def test_overdue_run_warns(self):
+        from catalog.status_views import assess_freshness
+        now = timezone.now()
+        self.assertEqual(assess_freshness(now - timedelta(hours=27), now)["level"], "warning")
+
+    def test_future_timestamp_not_green(self):
+        from catalog.status_views import assess_freshness
+        now = timezone.now()
+        self.assertEqual(assess_freshness(now + timedelta(minutes=1), now)["level"], "unknown")
+
+    def test_empty_catalog_unknown(self):
+        from catalog.status_views import assess_completeness
+        self.assertEqual(assess_completeness(0, 0)["level"], "unknown")
+
+    def test_partial_catalog_warning(self):
+        from catalog.status_views import assess_completeness
+        self.assertEqual(assess_completeness(9, 10)["level"], "warning")
+
+    def test_complete_catalog_ok(self):
+        from catalog.status_views import assess_completeness
+        self.assertEqual(assess_completeness(10, 10)["level"], "ok")

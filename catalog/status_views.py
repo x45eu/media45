@@ -15,6 +15,24 @@ from .management.commands.auto_media import STATE_KEY as SCAN_KEY
 from .models import Media, MediaDetails, ProviderThrottle, ScannedFile
 
 
+def assess_freshness(timestamp, now, *, max_age=timedelta(hours=26)):
+    """Only recorded execution age, never Docker service liveness."""
+    if timestamp is None or timestamp > now:
+        return {"level": "unknown", "label": "Unbekannt"}
+    if now - timestamp <= max_age:
+        return {"level": "ok", "label": "Im Zeitfenster"}
+    return {"level": "warning", "label": "Überfällig"}
+
+
+def assess_completeness(current, total):
+    """Missing items are a warning, not proof of a failed service."""
+    if total == 0:
+        return {"level": "unknown", "label": "Keine Einträge"}
+    if current == total:
+        return {"level": "ok", "label": "Vollständig"}
+    return {"level": "warning", "label": "Unvollständig"}
+
+
 @login_required
 @require_GET
 @never_cache
@@ -51,5 +69,9 @@ def system_status(request):
         "indexed_files": ScannedFile.objects.filter(root__in=("movies", "series")).count(),
         "last_details": stamps.get(DETAILS_KEY),
         "last_scan": stamps.get(SCAN_KEY),
+        "cover_health": assess_completeness(cover_count, total),
+        "details_health": assess_completeness(current_details, total),
+        "scan_health": assess_freshness(stamps.get(SCAN_KEY), now),
+        "details_run_health": assess_freshness(stamps.get(DETAILS_KEY), now),
         "checked_at": now,
     })

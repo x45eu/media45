@@ -3,6 +3,16 @@
 <section class="detail-page" aria-labelledby="status-title">
   <p class="eyebrow">Administration · lokale Daten</p>
   <h1 id="status-title">Systemstatus</h1>
+  <style>
+    .health { display:inline-flex; align-items:center; gap:.45rem; margin-left:.5rem;
+      border:1px solid #718096; border-radius:999px; padding:.16rem .62rem;
+      font-size:.78rem; font-weight:700; vertical-align:middle; }
+    .health::before { content:"●"; }
+    .health-ok { background:#153626; border-color:#438466; color:#b7f4d1; }
+    .health-warning { background:#423018; border-color:#9d7a3e; color:#ffe3a4; }
+    .health-unknown { background:#26313e; border-color:#657386; color:#d5dee9; }
+    .health-note { color:var(--muted); font-size:.84rem; }
+  </style>
   <p class="privacy-note">Nur lesende lokale Prüfungen. Keine externen Netzwerkabfragen und kein Zugriff auf NAS-Verzeichnisse. Letzte Läufe bestätigen nicht, dass ein Docker-Dienst gerade aktiv ist.</p>
   <div class="stats">
     <div class="stat"><strong>{{ total }}</strong><span>Filme und Serien im Katalog</span></div>
@@ -10,22 +20,22 @@
     <div class="stat"><strong>{{ checked_at|date:"d.m.Y H:i" }}</strong><span>Abfragezeit (Europe/Berlin)</span></div>
   </div>
   <div class="card">
-    <h2>Cover</h2>
+    <h2>Cover <span class="health health-{{ cover_health.level }}">{{ cover_health.label }}</span></h2>
     <p><strong>{{ cover_count }}</strong> vorhanden und gültig · <strong>{{ cover_missing }}</strong> fehlen oder sind abgelaufen</p>
     <small>Lokale Cover-Dateien im Web-Container; kein Download beim Aufruf.</small>
   </div>
   <div class="card">
-    <h2>TMDB-Metadaten</h2>
+    <h2>TMDB-Metadaten <span class="health health-{{ details_health.level }}">{{ details_health.label }}</span></h2>
     <p><strong>{{ details_count }}</strong> aktuell und IMDb-verifiziert · <strong>{{ details_missing }}</strong> fehlen, sind abgelaufen oder passen nicht zur IMDb-ID</p>
     <small>Metadaten gelten für 90 Tage als aktuell.</small>
   </div>
   <div class="card">
     <h2>Automatische Abläufe</h2>
     <dl class="detail-facts">
-      <div><dt>NAS-Inventur</dt><dd>{% if last_scan %}Letzter abgeschlossener Scan: {{ last_scan|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Scan vermerkt{% endif %}</dd></div>
-      <div><dt>TMDB-Details</dt><dd>{% if last_details %}Letzter abgeschlossener Lauf: {{ last_details|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Lauf vermerkt{% endif %}</dd></div>
+      <div><dt>NAS-Inventur</dt><dd><span class="health health-{{ scan_health.level }}">{{ scan_health.label }}</span> {% if last_scan %}Letzter abgeschlossener Scan: {{ last_scan|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Scan vermerkt{% endif %}</dd></div>
+      <div><dt>TMDB-Details</dt><dd><span class="health health-{{ details_run_health.level }}">{{ details_run_health.label }}</span> {% if last_details %}Letzter abgeschlossener Lauf: {{ last_details|date:"d.m.Y H:i" }}{% else %}Kein abgeschlossener Lauf vermerkt{% endif %}</dd></div>
     </dl>
-    <small>Die Seite überprüft keinen Docker-Containerzustand und greift nicht auf das NAS zu. Für Live-Dienststatus weiterhin Docker Compose verwenden.</small>
+    <small>Ampeln zeigen nur Datenvollständigkeit und das Alter gespeicherter Läufe (Richtwert: 26 Stunden); sie prüfen weder laufende Container noch erfolgreiche externe API-Antworten. Rot wird erst mit einer verlässlichen Fehlererfassung ergänzt. Für Live-Dienststatus weiterhin Docker Compose verwenden.</small>
   </div>
   <p><a href="{% url 'index' %}">Zurück zum Katalog</a></p>
 </section>
